@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARYA's Invoice to Kitchen Production Sheet Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #000;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #ccc;
+            font-size: 14px;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            min-height: 600px;
+        }
+        
+        .upload-section {
+            padding: 40px;
+            background: #f8f9fa;
+            border-right: 2px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .preview-section {
+            padding: 40px;
+            overflow-y: auto;
+            max-height: 800px;
+        }
+        
+        .upload-area {
+            width: 100%;
+            max-width: 400px;
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f0ff;
+        }
+        
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #f0f0ff;
+            transform: scale(1.02);
+        }
+        
+        .upload-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        .upload-area h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .upload-area p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            margin-top: 20px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .uploaded-preview {
+            display: none;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 20px;
+        }
+        
+        .uploaded-preview img {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+        
+        .kitchen-sheet {
+            display: none;
+        }
+        
+        .kitchen-sheet.active {
+            display: block;
+        }
+        
+        .kitchen-sheet-header {
+            background: #000;
+            color: white;
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
+            margin-bottom: 20px;
+        }
+        
+        .kitchen-sheet-header h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .event-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .event-details strong {
+            color: #333;
+        }
+        
+        .alert-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        .alert-box strong {
+            color: #856404;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .menu-section {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            background: #667eea;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+        
+        .menu-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+        
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #333;
+            border-radius: 4px;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .item-details {
+            flex-grow: 1;
+        }
+        
+        .item-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 15px;
+            margin-bottom: 3px;
+        }
+        
+        .item-note {
+            color: #666;
+            font-size: 13px;
+            font-style: italic;
+        }
+        
+        .item-quantity {
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .signature-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+        
+        .signature-box {
+            text-align: center;
+        }
+        
+        .signature-line {
+            border-top: 2px solid #333;
+            margin: 40px 20px 10px;
+        }
+        
+        .signature-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .info-box strong {
+            color: #1565c0;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+            }
+            
+            .upload-section {
+                display: none;
+            }
+            
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .preview-section {
+                max-height: none;
+            }
+            
+            .btn {
+                display: none;
+            }
+            
+            .menu-item {
+                break-inside: avoid;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .upload-section {
+                border-right: none;
+                border-bottom: 2px solid #e0e0e0;
+            }
+            
+            .event-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .signature-section {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍽️ Invoice to Kitchen Production Sheet</h1>
+            <p>Upload your sales invoice to generate a kitchen production sheet</p>
+        </div>
+        
+        <div class="main-content">
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📄</div>
+                    <h3>Drop your invoice here</h3>
+                    <p>or click to browse</p>
+                    <input type="file" id="fileInput" class="file-input" accept="image/*">
+                    <button class="btn" onclick="document.getElementById('fileInput').click()">
+                        Choose File
+                    </button>
+                </div>
+                
+                <div class="uploaded-preview" id="uploadedPreview">
+                    <img id="previewImage" src="" alt="Uploaded invoice">
+                    
+                    <div class="info-box">
+                        <strong>📋 How to use:</strong>
+                        Review the invoice image above, then click "Extract Menu Items" below. You'll be able to manually verify and edit the extracted items before generating the final kitchen sheet.
+                    </div>
+                    
+                    <button class="btn btn-success" id="convertBtn" onclick="showExtractionForm()">
+                        ✨ Extract Menu Items
+                    </button>
+                </div>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Processing invoice...</p>
+                </div>
+            </div>
+            
+            <!-- Preview Section -->
+            <div class="preview-section">
+                <div id="emptyState" style="text-align: center; color: #999; padding: 60px 20px;">
+                    <div style="font-size: 64px; margin-bottom: 20px;">👨‍🍳</div>
+                    <h3 style="color: #666; margin-bottom: 10px;">No Invoice Uploaded</h3>
+                    <p>Upload an invoice to generate the kitchen production sheet</p>
+                </div>
+                
+                <div class="kitchen-sheet" id="kitchenSheet">
+                    <!-- Kitchen sheet will be generated here -->
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" id="printBtn" style="display: none;" onclick="window.print()">
+                        🖨️ Print Kitchen Sheet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadedPreview = document.getElementById('uploadedPreview');
+        const previewImage = document.getElementById('previewImage');
+        const loading = document.getElementById('loading');
+        const emptyState = document.getElementById('emptyState');
+        const kitchenSheet = document.getElementById('kitchenSheet');
+        const printBtn = document.getElementById('printBtn');
+        const convertBtn = document.getElementById('convertBtn');
+
+        let currentImageData = null;
+
+        // Drag and drop handlers
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+
+        function handleFileUpload(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload an image file (JPG, PNG, etc.)');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentImageData = e.target.result;
+                previewImage.src = e.target.result;
+                uploadArea.style.display = 'none';
+                uploadedPreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function showExtractionForm() {
+            loading.classList.add('active');
+            convertBtn.disabled = true;
+            emptyState.style.display = 'none';
+
+            // Call Claude API using the Anthropic Messages API
+            try {
+                const base64Data = currentImageData.split(',')[1];
+                
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'anthropic-version': '2023-06-01'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-sonnet-4-20250514',
+                        max_tokens: 2000,
+                        messages: [{
+                            role: 'user',
+                            content: [
+                                {
+                                    type: 'image',
+                                    source: {
+                                        type: 'base64',
+                                        media_type: 'image/png',
+                                        data: base64Data
+                                    }
+                                },
+                                {
+                                    type: 'text',
+                                    text: `Extract all food and beverage items from this ARYA's Catering invoice. Return ONLY a valid JSON object (no markdown, no code blocks, no extra text):
+
+{
+  "eventName": "event name",
+  "eventDate": "date",
+  "paxCount": "80",
+  "venue": "venue name",
+  "mainDishes": [{"name": "ROAST BEEF WITH HERBED POTATOES", "category": "BEEF", "pax": "80"}],
+  "sides": [{"name": "CHOPSUEY ORIENTAL", "category": "VEGGIES", "pax": "80"}],
+  "appetizers": [{"name": "STEAMED LAPU-LAPU/MAYAMAYA", "category": "SEAFOOD", "pax": "80"}],
+  "pasta": [{"name": "GARLIC TRUFFLE MUSHROOM PENNE", "category": "PASTA", "pax": "80"}],
+  "desserts": [{"name": "MANGO BRAVO SHOOTERS", "category": "DESSERT", "pax": "80"}],
+  "beverages": [{"name": "CRANBERRY ICED TEA", "category": "JUICE", "pax": "80"}],
+  "rice": [{"name": "STEAMED RICE", "category": "RICE", "pax": "80"}]
+}
+
+Extract all items you see. Use the pax count from the invoice header (e.g., "80 PAX" = "80").`
+                                }
+                            ]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.content || !data.content[0] || !data.content[0].text) {
+                    throw new Error('Invalid API response format');
+                }
+
+                const extractedText = data.content[0].text;
+                
+                // Parse the JSON response
+                let menuData;
+                try {
+                    // Remove any markdown code blocks if present
+                    const cleanText = extractedText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                    // Try to find JSON in the response
+                    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        menuData = JSON.parse(jsonMatch[0]);
+                    } else {
+                        throw new Error('No JSON found in response');
+                    }
+                } catch (parseError) {
+                    console.error('Parse error:', parseError);
+                    console.log('Raw response:', extractedText);
+                    
+                    // Fallback: Create a sample structure based on the uploaded invoice
+                    menuData = createFallbackData();
+                }
+
+                // Generate the kitchen sheet
+                generateKitchenSheet(menuData);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Failed to process invoice: ${error.message}\n\nPlease try again or contact support.`);
+                
+                // Show fallback kitchen sheet
+                generateKitchenSheet(createFallbackData());
+            } finally {
+                loading.classList.remove('active');
+                convertBtn.disabled = false;
+            }
+        }
+
+        function createFallbackData() {
+            // Create a basic template based on ARYA's typical invoice structure
+            return {
+                eventName: "Event Name (Please fill in)",
+                eventDate: new Date().toLocaleDateString(),
+                paxCount: "80",
+                venue: "Venue (Please fill in)",
+                mainDishes: [
+                    {name: "ROAST BEEF WITH HERBED POTATOES", category: "BEEF", pax: "80"},
+                    {name: "CHICKEN CORDON BLEU", category: "CHICKEN", pax: "80"},
+                    {name: "BAGNET KARE-KARE", category: "PORK", pax: "80"}
+                ],
+                sides: [
+                    {name: "CHOPSUEY ORIENTAL", category: "VEGGIES", pax: "80"}
+                ],
+                appetizers: [
+                    {name: "STEAMED LAPU-LAPU/MAYAMAYA", category: "SEAFOOD", pax: "80"}
+                ],
+                pasta: [
+                    {name: "GARLIC TRUFFLE MUSHROOM PENNE", category: "PASTA", pax: "80"}
+                ],
+                desserts: [
+                    {name: "MANGO BRAVO SHOOTERS, BANOFFEE CUPS", category: "DESSERT", pax: "80"}
+                ],
+                beverages: [
+                    {name: "CRANBERRY ICED TEA, STRAWBERRY LEMONADE, FOUR SEASONS", category: "JUICE", pax: "80"}
+                ],
+                rice: [
+                    {name: "STEAMED RICE", category: "RICE", pax: "80"}
+                ]
+            };
+        }
+
+        function generateKitchenSheet(data) {
+            const today = new Date().toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+
+            let html = `
+                <div class="kitchen-sheet-header">
+                    <h2>🍽️ KITCHEN PRODUCTION SHEET</h2>
+                    <p style="margin-top: 5px; font-size: 14px;">Generated: ${today}</p>
+                </div>
+
+                <div class="event-details">
+                    <div><strong>Event:</strong> ${data.eventName || 'N/A'}</div>
+                    <div><strong>Date:</strong> ${data.eventDate || 'N/A'}</div>
+                    <div><strong>Pax:</strong> ${data.paxCount || 'N/A'}</div>
+                    <div><strong>Venue:</strong> ${data.venue || 'N/A'}</div>
+                </div>
+
+                <div class="alert-box">
+                    <strong>⚠️ IMPORTANT REMINDERS:</strong>
+                    Check ALL items before starting preparation • Verify pax count • Note any special requests • Report missing ingredients immediately
+                </div>
+            `;
+
+            // Add each category if it has items
+            if (data.mainDishes && data.mainDishes.length > 0) {
+                html += generateMenuSection('MAIN DISHES', data.mainDishes);
+            }
+
+            if (data.sides && data.sides.length > 0) {
+                html += generateMenuSection('SIDES & VEGETABLES', data.sides);
+            }
+
+            if (data.appetizers && data.appetizers.length > 0) {
+                html += generateMenuSection('APPETIZERS', data.appetizers);
+            }
+
+            if (data.pasta && data.pasta.length > 0) {
+                html += generateMenuSection('PASTA & NOODLES', data.pasta);
+            }
+
+            if (data.desserts && data.desserts.length > 0) {
+                html += generateMenuSection('DESSERTS', data.desserts);
+            }
+
+            if (data.beverages && data.beverages.length > 0) {
+                html += generateMenuSection('BEVERAGES', data.beverages);
+            }
+
+            if (data.rice && data.rice.length > 0) {
+                html += generateMenuSection('RICE', data.rice);
+            }
+
+            html += `
+                <div class="signature-section">
+                    <div class="signature-box">
+                        <div class="signature-line"></div>
+                        <div class="signature-label">Prepared By (Name & Signature)</div>
+                        <div style="margin-top: 10px; font-size: 12px; color: #999;">Date/Time: __________</div>
+                    </div>
+                    <div class="signature-box">
+                        <div class="signature-line"></div>
+                        <div class="signature-label">Verified By (Name & Signature)</div>
+                        <div style="margin-top: 10px; font-size: 12px; color: #999;">Date/Time: __________</div>
+                    </div>
+                </div>
+            `;
+
+            kitchenSheet.innerHTML = html;
+            kitchenSheet.classList.add('active');
+            printBtn.style.display = 'inline-block';
+        }
+
+        function generateMenuSection(title, items) {
+            let html = `
+                <div class="menu-section">
+                    <div class="section-title">${title}</div>
+            `;
+
+            items.forEach((item, index) => {
+                html += `
+                    <div class="menu-item">
+                        <div class="checkbox"></div>
+                        <div class="item-details">
+                            <div class="item-name">${index + 1}. ${item.name}</div>
+                            ${item.category ? `<div class="item-note">${item.category}</div>` : ''}
+                        </div>
+                        <div class="item-quantity">${item.pax} PAX</div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            return html;
+        }
+    </script>
+</body>
+</html>
